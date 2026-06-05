@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SpotDeck</string>
+    <string name="launch_spotify">Launch Spotify</string>
+    <string name="apps">Applications</string>
+    <string name="swipe_up_instruction">Swipe up to see all apps</string>
+    <string name="swipe_down_instruction">Swipe down to return</string>
+</resources>

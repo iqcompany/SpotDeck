@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#121212"
+        android:pathData="M24,24m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
+
+    <!-- Music note -->
+    <path
+        android:fillColor="#1DB954"
+        android:pathData="M24,12v21.1c-1.18,-0.68 -2.54,-1.1 -4,-1.1 -4.42,0 -8,3.58 -8,8s3.58,8 8,8 8,-3.58 8,-8V20h8v-8h-12z" />
+
+    <!-- Deck representation -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,38h16v2H16z" />
+</vector>

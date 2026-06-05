@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    tools:context=".MainActivity">
+
+    <!-- Home Screen Container -->
+    <LinearLayout
+        android:id="@+id/homeContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp">
+
+        <!-- SpotDeck Logo/Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textSize="48sp"
+            android:textColor="@color/primary"
+            android:fontFamily="sans-serif-light"
+            android:layout_marginBottom="64dp" />
+
+        <!-- Spotify Launch Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/spotifyButton"
+            android:layout_width="200dp"
+            android:layout_height="80dp"
+            android:text="@string/launch_spotify"
+            android:textSize="18sp"
+            android:textColor="@color/on_primary"
+            app:backgroundTint="@color/spotify_green"
+            app:cornerRadius="40dp"
+            app:icon="@drawable/ic_music_note"
+            app:iconTint="@color/on_primary"
+            app:iconGravity="textStart"
+            app:iconSize="32dp" />
+
+        <!-- Instruction Text -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/swipe_up_instruction"
+            android:textColor="@color/on_background_secondary"
+            android:textSize="14sp"
+            android:layout_marginTop="32dp"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- App List Container -->
+    <LinearLayout
+        android:id="@+id/appListContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- App List Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:background="@color/surface">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/apps"
+                android:textSize="20sp"
+                android:textColor="@color/on_surface"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/swipe_down_instruction"
+                android:textColor="@color/on_surface_secondary"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <!-- Apps RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/appListRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+    </LinearLayout>
+
+</RelativeLayout>
