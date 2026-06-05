@@ -5,18 +5,14 @@
     android:viewportWidth="48"
     android:viewportHeight="48">
 
-    <!-- Background circle -->
+    <!-- Black background circle -->
     <path
-        android:fillColor="#121212"
+        android:fillColor="#000000"
         android:pathData="M24,24m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
 
-    <!-- Music note -->
+    <!-- Simple music note ♪ -->
     <path
         android:fillColor="#1DB954"
-        android:pathData="M24,12v21.1c-1.18,-0.68 -2.54,-1.1 -4,-1.1 -4.42,0 -8,3.58 -8,8s3.58,8 8,8 8,-3.58 8,-8V20h8v-8h-12z" />
+        android:pathData="M24,8 L24,32.5 C23,32 22,31.75 21,31.75 C18,31.75 15.5,34.25 15.5,37.25 C15.5,40.25 18,42.75 21,42.75 C24,42.75 26.5,40.25 26.5,37.25 L26.5,17.5 L33,15.5 L33,12.5 L24,8 Z" />
 
-    <!-- Deck representation -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M16,38h16v2H16z" />
 </vector>

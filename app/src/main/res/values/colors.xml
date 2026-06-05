@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Material Design 3 Dark Theme Colors -->
-    <color name="background">#121212</color>
+    <color name="background">#000000</color>
     <color name="surface">#1E1E1E</color>
     <color name="surface_variant">#2A2A2A</color>
 

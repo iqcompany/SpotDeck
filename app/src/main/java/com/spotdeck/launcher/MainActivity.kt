@@ -1,19 +1,26 @@
 package com.spotdeck.launcher
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GestureDetectorCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.spotdeck.launcher.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
@@ -25,6 +32,17 @@ class MainActivity : AppCompatActivity() {
     private var autoLaunchRunnable: Runnable? = null
     private var isAppListVisible = false
 
+    // Status display
+    private val timeHandler = Handler(Looper.getMainLooper())
+    private var timeUpdateRunnable: Runnable? = null
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            updateBatteryLevel()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -32,11 +50,13 @@ class MainActivity : AppCompatActivity() {
 
         setupUI()
         setupGestureDetector()
+        setupBackPressedHandler()
+        setupStatusDisplay()
         loadInstalledApps()
     }
 
     private fun setupUI() {
-        binding.spotifyButton.setOnClickListener {
+        binding.spotifyIcon.setOnClickListener {
             launchSpotify()
         }
 
@@ -81,6 +101,18 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         })
+    }
+
+    private fun setupBackPressedHandler() {
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isAppListVisible) {
+                    hideAppList()
+                }
+                // Don't exit the launcher - just ignore back press when on home screen
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -200,11 +232,54 @@ class MainActivity : AppCompatActivity() {
         return apps.sortedBy { it.name }
     }
 
-    override fun onBackPressed() {
-        if (isAppListVisible) {
-            hideAppList()
-        } else {
-            // Don't call super.onBackPressed() to prevent exiting the launcher
+    private fun setupStatusDisplay() {
+        // Register battery change receiver
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        registerReceiver(batteryReceiver, filter)
+
+        // Initialize status display
+        updateTime()
+        updateBatteryLevel()
+
+        // Start time update loop
+        startTimeUpdates()
+    }
+
+    private fun startTimeUpdates() {
+        timeUpdateRunnable = object : Runnable {
+            override fun run() {
+                updateTime()
+                timeHandler.postDelayed(this, 60000) // Update every minute
+            }
+        }
+        timeHandler.post(timeUpdateRunnable!!)
+    }
+
+    private fun stopTimeUpdates() {
+        timeUpdateRunnable?.let {
+            timeHandler.removeCallbacks(it)
+            timeUpdateRunnable = null
+        }
+    }
+
+    private fun updateTime() {
+        val currentTime = timeFormat.format(Date())
+        binding.currentTime.text = currentTime
+    }
+
+    private fun updateBatteryLevel() {
+        val batteryManager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        binding.batteryLevel.text = "🔋 ${batteryLevel}%"
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopTimeUpdates()
+        try {
+            unregisterReceiver(batteryReceiver)
+        } catch (e: Exception) {
+            // Receiver might not be registered
         }
     }
 }

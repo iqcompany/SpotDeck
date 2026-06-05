@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#1DB954"
+        android:pathData="M60,60m-56,0a56,56 0,1 1,112 0a56,56 0,1 1,-112 0" />
+
+    <!-- Clean curved lines inspired by Spotify -->
+    <!-- Top curve -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M25,42 C45,32 75,32 95,42" />
+
+    <!-- Middle curve -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M25,52 C50,38 70,38 95,52" />
+
+    <!-- Bottom curve -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M25,62 C55,45 65,45 95,62" />
+
+    <!-- Central music note -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,20 L60,45 C58,44 56,43.5 54,43.5 C50,43.5 46.5,47 46.5,51 C46.5,55 50,58.5 54,58.5 C58,58.5 61.5,55 61.5,51 L61.5,25 L70,23 L70,20 L60,20 Z" />
+
+</vector>
