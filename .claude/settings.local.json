@@ -1,7 +1,41 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(chmod +x d:/dev/SpotDeck/gradlew)",
+      "Bash(curl -o d:/dev/SpotDeck/gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar)",
+      "Bash(gradle --version)",
+      "Bash(curl -L -o d:/dev/SpotDeck/gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.2-wrapper.jar)",
+      "Bash(curl -L -o d:/dev/SpotDeck/gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar)",
+      "Bash(./gradlew.bat build:*)",
+      "Bash(./gradlew.bat clean:*)",
+      "Bash(adb devices:*)",
+      "Bash(emulator -list-avds)",
+      "Bash(\"C:/Users/ryo/AppData/Local/Android/Sdk/emulator/emulator\" -list-avds)",
+      "Bash(\"C:/Users/ryo/AppData/Local/Android/Sdk/emulator/emulator\" -avd Medium_Phone_API_36)",
+      "Bash(adb install:*)",
+      "Bash(\"C:/Users/ryo/AppData/Local/Android/Sdk/tools/bin/avdmanager\" list:*)",
+      "Bash(adb shell:*)",
+      "Bash(./gradlew.bat assembleDebug)",
+      "Bash(ls d:/dev/SpotDeck/*.png)",
+      "Bash(adb kill-server:*)",
+      "Bash(adb start-server:*)",
+      "Bash(\"C:/Users/ryo/AppData/Local/Android/Sdk/emulator/emulator\" -avd Medium_Phone_API_36 -screen 640x480 -density 160)",
+      "Bash(\"C:/Users/ryo/AppData/Local/Android/Sdk/emulator/emulator\" -avd Medium_Phone_API_36 -no-snapshot-load)",
+      "Bash(adb uninstall:*)",
+      "Bash(adb -s 0123456789ABCDEF install app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(adb -s 0123456789ABCDEF shell am start com.spotdeck.launcher/.MainActivity)",
+      "Bash(adb -s 0123456789ABCDEF shell input keyevent KEYCODE_HOME)",
+      "Bash(adb -s 0123456789ABCDEF shell am start -n com.android.settings/.Settings)",
+      "Bash(adb -s 0123456789ABCDEF install -r app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(./gradlew.bat assembleRelease)",
+      "Bash(adb -s 0123456789ABCDEF install -r app/build/outputs/apk/release/app-release.apk)",
+      "Bash(adb -s 0123456789ABCDEF install -r app/build/outputs/apk/release/app-release-unsigned.apk)",
+      "Bash(gh pr create --title 'M308 Spotify Launcher - Complete Implementation' --body ':*)",
+      "Bash(gh release create v1.0 app/build/outputs/apk/release/app-release-unsigned.apk --title 'SpotDeck v1.0 - M308 Spotify Launcher' --notes ':*)"
     ]
   }
 }
