@@ -2,7 +2,7 @@
 
 A minimalist Spotify-focused launcher for Android devices.
 
-SpotDeck is a lightweight Android launcher designed for dedicated music players and audio-focused devices such as the Oilsky M308.
+SpotDeck is a lightweight Android launcher designed for dedicated music players and audio-focused devices such as the Oilsky M308 / G88.
 
 Instead of presenting a traditional Android home screen, SpotDeck provides a distraction-free experience centered around Spotify.
 
@@ -37,7 +37,7 @@ While the application list is visible:
 
 ## Target Devices
 
-* Oilsky M308
+* Oilsky M308 / G88
 * Android-based DAPs
 * Dedicated Spotify players
 * Audio-focused Android devices

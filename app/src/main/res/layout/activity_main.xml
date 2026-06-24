@@ -24,6 +24,15 @@
             android:textSize="38sp"
             android:textColor="@color/primary"
             android:fontFamily="sans-serif-light"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="by IQ COMPANY"
+            android:textSize="14sp"
+            android:textColor="@color/on_background_secondary"
+            android:fontFamily="sans-serif-light"
             android:layout_marginBottom="8dp" />
 
         <!-- Status Info Container -->
