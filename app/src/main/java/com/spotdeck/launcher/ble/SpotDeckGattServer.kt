@@ -31,8 +31,8 @@ class SpotDeckGattServer(
     private var advertiser: BluetoothLeAdvertiser? = null
     private var isAdvertising = false
     private var connectedDevice: BluetoothDevice? = null
-    private val notifyEnabledChars = mutableSetOf<java.util.UUID>()
-    private val characteristicData = mutableMapOf<java.util.UUID, ByteArray>()
+    private val notifyEnabledChars = java.util.Collections.synchronizedSet(mutableSetOf<java.util.UUID>())
+    private val characteristicData = java.util.concurrent.ConcurrentHashMap<java.util.UUID, ByteArray>()
 
     private val gattServerCallback = object : BluetoothGattServerCallback() {
 
@@ -44,6 +44,7 @@ class SpotDeckGattServer(
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
                     connectedDevice = null
+                    notifyEnabledChars.clear()
                     Log.i(TAG, "Device disconnected: ${device.address}")
                 }
             }
@@ -108,7 +109,7 @@ class SpotDeckGattServer(
         ) {
             val charUuid = descriptor.characteristic.uuid
             if (descriptor.uuid == BleConstants.CCCD_UUID) {
-                if (value.contentEquals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+                if (value != null && value.contentEquals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
                     notifyEnabledChars.add(charUuid)
                     Log.i(TAG, "Notifications enabled for $charUuid from ${device.address}")
                 } else {
