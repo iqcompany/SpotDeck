@@ -33,7 +33,7 @@ class SpotifyController(private val context: Context) {
 
     // Debounce: only notify on actual state changes, not position updates
     private var lastPlayingState: Boolean? = null
-    private var lastTitle: String? = null
+    private var lastMetadataKey: String? = null
 
     // Listeners for state changes
     var onPlaybackStateChanged: ((String) -> Unit)? = null
@@ -72,12 +72,15 @@ class SpotifyController(private val context: Context) {
             }
 
             override fun onMetadataChanged(metadata: android.media.MediaMetadata?) {
-                val title = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE)
-                if (title != lastTitle) {
-                    lastTitle = title
+                val title = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE) ?: ""
+                val artist = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST) ?: ""
+                val duration = metadata?.getLong(android.media.MediaMetadata.METADATA_KEY_DURATION) ?: 0
+                val key = "$title|$artist|$duration"
+                if (key != lastMetadataKey) {
+                    lastMetadataKey = key
                     val json = buildMetadataJson(metadata)
                     this@SpotifyController.onMetadataChanged?.invoke(json)
-                    Log.i(TAG, "Track changed: $title")
+                    Log.i(TAG, "Track changed: $title - $artist")
                 }
             }
         }
@@ -86,7 +89,11 @@ class SpotifyController(private val context: Context) {
 
         // Send initial state
         lastPlayingState = controller.playbackState?.state == PlaybackState.STATE_PLAYING
-        lastTitle = controller.metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE)
+        val initMd = controller.metadata
+        val initTitle = initMd?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE) ?: ""
+        val initArtist = initMd?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST) ?: ""
+        val initDuration = initMd?.getLong(android.media.MediaMetadata.METADATA_KEY_DURATION) ?: 0
+        lastMetadataKey = "$initTitle|$initArtist|$initDuration"
         onPlaybackStateChanged?.invoke(buildPlaybackStatusJson(controller.playbackState))
         onMetadataChanged?.invoke(buildMetadataJson(controller.metadata))
     }
@@ -148,6 +155,11 @@ class SpotifyController(private val context: Context) {
     fun mute() {
         audioManager?.adjustVolume(AudioManager.ADJUST_TOGGLE_MUTE, AudioManager.FLAG_SHOW_UI)
         Log.i(TAG, "MUTE toggled")
+    }
+
+    fun setVolume(level: Int) {
+        audioManager?.setStreamVolume(AudioManager.STREAM_MUSIC, level, AudioManager.FLAG_SHOW_UI)
+        Log.i(TAG, "VOLUME set to $level")
     }
 
     fun hasNotificationAccess(): Boolean {

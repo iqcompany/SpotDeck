@@ -55,9 +55,9 @@ class BleService : Service() {
 
         spotifyController = SpotifyController(this)
 
-        gattServer = SpotDeckGattServer(this) { cmd ->
+        gattServer = SpotDeckGattServer(this) { cmd, data ->
             Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)}")
-            handleCommand(cmd)
+            handleCommand(cmd, data)
         }
 
         gattServer?.onConnectionStateChanged = { connected ->
@@ -89,7 +89,7 @@ class BleService : Service() {
         controller.startMonitoring()
     }
 
-    private fun handleCommand(cmd: Byte) {
+    private fun handleCommand(cmd: Byte, data: ByteArray?) {
         val controller = spotifyController ?: return
         when (cmd) {
             BleConstants.CMD_PLAY -> controller.play()
@@ -100,6 +100,11 @@ class BleService : Service() {
             BleConstants.CMD_VOLUME_UP -> controller.volumeUp()
             BleConstants.CMD_VOLUME_DOWN -> controller.volumeDown()
             BleConstants.CMD_MUTE -> controller.mute()
+            BleConstants.CMD_SET_VOLUME -> {
+                if (data != null && data.size >= 2) {
+                    controller.setVolume(data[1].toInt() and 0xFF)
+                }
+            }
             BleConstants.CMD_REQUEST_STATUS -> {
                 val json = controller.buildPlaybackStatusJson()
                 gattServer?.notifyCharacteristic(BleConstants.PLAYBACK_STATUS_CHAR_UUID, json.toByteArray())
@@ -117,15 +122,17 @@ class BleService : Service() {
     }
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "SpotDeck BLE Service",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply {
-            description = "BLE GATT Server for remote control"
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "SpotDeck BLE Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "BLE GATT Server for remote control"
+            }
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(channel)
         }
-        val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(channel)
     }
 
     private fun createNotification(text: String): Notification {

@@ -308,7 +308,7 @@ class MainActivity : AppCompatActivity() {
     private fun initBleServer() {
         Log.i(TAG, "Starting BLE Foreground Service...")
         val intent = Intent(this, BleService::class.java)
-        startForegroundService(intent)
+        androidx.core.content.ContextCompat.startForegroundService(this, intent)
     }
 
     private fun checkNotificationAccess() {

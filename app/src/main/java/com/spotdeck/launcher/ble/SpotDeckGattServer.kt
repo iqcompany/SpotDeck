@@ -20,7 +20,7 @@ import android.util.Log
 @SuppressLint("MissingPermission")
 class SpotDeckGattServer(
     private val context: Context,
-    private val onCommandReceived: (Byte) -> Unit
+    private val onCommandReceived: (Byte, ByteArray?) -> Unit
 ) {
     companion object {
         private const val TAG = "SpotDeckBLE"
@@ -66,7 +66,7 @@ class SpotDeckGattServer(
                 if (value != null && value.isNotEmpty()) {
                     val cmd = value[0]
                     Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)} (0x${String.format("%02X", cmd.toInt() and 0xFF)}) from ${device.address}")
-                    onCommandReceived(cmd)
+                    onCommandReceived(cmd, value)
                 } else {
                     Log.w(TAG, "Empty command received from ${device.address}")
                 }
