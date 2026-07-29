@@ -318,9 +318,22 @@ class MainActivity : AppCompatActivity() {
 
         if (gattServer!!.start()) {
             Log.i(TAG, "BLE GATT Server started successfully")
+            startMediaMonitoring()
         } else {
             Log.e(TAG, "Failed to start BLE GATT Server")
         }
+    }
+
+    private fun startMediaMonitoring() {
+        spotifyController.onPlaybackStateChanged = { json ->
+            Log.i(TAG, "Playback state changed, notifying client")
+            gattServer?.notifyCharacteristic(BleConstants.PLAYBACK_STATUS_CHAR_UUID, json.toByteArray())
+        }
+        spotifyController.onMetadataChanged = { json ->
+            Log.i(TAG, "Metadata changed, notifying client")
+            gattServer?.notifyCharacteristic(BleConstants.METADATA_CHAR_UUID, json.toByteArray())
+        }
+        spotifyController.startMonitoring()
     }
 
     private fun handleCommand(cmd: Byte) {
@@ -333,6 +346,18 @@ class MainActivity : AppCompatActivity() {
             BleConstants.CMD_VOLUME_UP -> spotifyController.volumeUp()
             BleConstants.CMD_VOLUME_DOWN -> spotifyController.volumeDown()
             BleConstants.CMD_MUTE -> spotifyController.mute()
+            BleConstants.CMD_REQUEST_STATUS -> {
+                val json = spotifyController.buildPlaybackStatusJson()
+                gattServer?.notifyCharacteristic(BleConstants.PLAYBACK_STATUS_CHAR_UUID, json.toByteArray())
+            }
+            BleConstants.CMD_REQUEST_METADATA -> {
+                val json = spotifyController.buildMetadataJson()
+                gattServer?.notifyCharacteristic(BleConstants.METADATA_CHAR_UUID, json.toByteArray())
+            }
+            BleConstants.CMD_REQUEST_DEVICE_STATUS -> {
+                val json = spotifyController.buildDeviceStatusJson()
+                gattServer?.notifyCharacteristic(BleConstants.DEVICE_STATUS_CHAR_UUID, json.toByteArray())
+            }
             else -> Log.w(TAG, "Unhandled command: ${BleConstants.commandName(cmd)}")
         }
     }
@@ -390,6 +415,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        spotifyController.stopMonitoring()
         gattServer?.stop()
         gattServer = null
         stopTimeUpdates()
