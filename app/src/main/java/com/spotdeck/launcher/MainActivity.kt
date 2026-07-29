@@ -25,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.spotdeck.launcher.ble.BleConstants
 import com.spotdeck.launcher.ble.SpotDeckGattServer
+import com.spotdeck.launcher.media.SpotifyController
 import com.spotdeck.launcher.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -45,8 +46,9 @@ class MainActivity : AppCompatActivity() {
     private var autoLaunchRunnable: Runnable? = null
     private var isAppListVisible = false
 
-    // BLE
+    // BLE & Media
     private var gattServer: SpotDeckGattServer? = null
+    private lateinit var spotifyController: SpotifyController
 
     // Status display
     private val timeHandler = Handler(Looper.getMainLooper())
@@ -64,11 +66,13 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        spotifyController = SpotifyController(this)
         setupUI()
         setupGestureDetector()
         setupBackPressedHandler()
         setupStatusDisplay()
         loadInstalledApps()
+        checkNotificationAccess()
         startBleServer()
     }
 
@@ -309,12 +313,41 @@ class MainActivity : AppCompatActivity() {
         Log.i(TAG, "Initializing BLE GATT Server...")
         gattServer = SpotDeckGattServer(this) { cmd ->
             Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)}")
+            handleCommand(cmd)
         }
 
         if (gattServer!!.start()) {
             Log.i(TAG, "BLE GATT Server started successfully")
         } else {
             Log.e(TAG, "Failed to start BLE GATT Server")
+        }
+    }
+
+    private fun handleCommand(cmd: Byte) {
+        when (cmd) {
+            BleConstants.CMD_PLAY -> spotifyController.play()
+            BleConstants.CMD_PAUSE -> spotifyController.pause()
+            BleConstants.CMD_PLAY_PAUSE -> spotifyController.playPause()
+            BleConstants.CMD_NEXT -> spotifyController.next()
+            BleConstants.CMD_PREVIOUS -> spotifyController.previous()
+            BleConstants.CMD_VOLUME_UP -> spotifyController.volumeUp()
+            BleConstants.CMD_VOLUME_DOWN -> spotifyController.volumeDown()
+            BleConstants.CMD_MUTE -> spotifyController.mute()
+            else -> Log.w(TAG, "Unhandled command: ${BleConstants.commandName(cmd)}")
+        }
+    }
+
+    private fun checkNotificationAccess() {
+        if (!spotifyController.hasNotificationAccess()) {
+            Log.w(TAG, "Notification listener access not granted, opening settings...")
+            try {
+                val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open notification listener settings", e)
+            }
+        } else {
+            Log.i(TAG, "Notification listener access granted")
         }
     }
 
