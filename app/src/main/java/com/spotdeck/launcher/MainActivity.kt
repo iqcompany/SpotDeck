@@ -1,22 +1,30 @@
 package com.spotdeck.launcher
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.GestureDetectorCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.spotdeck.launcher.ble.BleConstants
+import com.spotdeck.launcher.ble.SpotDeckGattServer
 import com.spotdeck.launcher.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -25,12 +33,20 @@ import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        private const val TAG = "SpotDeck"
+        private const val REQUEST_BLE_PERMISSIONS = 100
+    }
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var gestureDetector: GestureDetectorCompat
     private lateinit var appsAdapter: AppsAdapter
     private val autoLaunchHandler = Handler(Looper.getMainLooper())
     private var autoLaunchRunnable: Runnable? = null
     private var isAppListVisible = false
+
+    // BLE
+    private var gattServer: SpotDeckGattServer? = null
 
     // Status display
     private val timeHandler = Handler(Looper.getMainLooper())
@@ -53,6 +69,7 @@ class MainActivity : AppCompatActivity() {
         setupBackPressedHandler()
         setupStatusDisplay()
         loadInstalledApps()
+        startBleServer()
     }
 
     private fun setupUI() {
@@ -273,8 +290,72 @@ class MainActivity : AppCompatActivity() {
         binding.batteryLevel.text = "🔋 ${batteryLevel}%"
     }
 
+    // ── BLE ──
+
+    private fun startBleServer() {
+        Log.i(TAG, "startBleServer called")
+        if (!hasBlePermissions()) {
+            Log.i(TAG, "BLE permissions not granted, requesting...")
+            cancelAutoLaunch()
+            requestBlePermissions()
+            return
+        }
+        initBleServer()
+    }
+
+    private fun initBleServer() {
+        if (gattServer?.isRunning == true) return
+
+        Log.i(TAG, "Initializing BLE GATT Server...")
+        gattServer = SpotDeckGattServer(this) { cmd ->
+            Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)}")
+        }
+
+        if (gattServer!!.start()) {
+            Log.i(TAG, "BLE GATT Server started successfully")
+        } else {
+            Log.e(TAG, "Failed to start BLE GATT Server")
+        }
+    }
+
+    private fun hasBlePermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED &&
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
+    private fun requestBlePermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_ADVERTISE,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ),
+                REQUEST_BLE_PERMISSIONS
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_BLE_PERMISSIONS) {
+            if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                initBleServer()
+            } else {
+                Log.w(TAG, "BLE permissions denied")
+                Toast.makeText(this, "BLE permissions required for remote control", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        gattServer?.stop()
+        gattServer = null
         stopTimeUpdates()
         try {
             unregisterReceiver(batteryReceiver)
