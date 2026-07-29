@@ -23,8 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.GestureDetectorCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.spotdeck.launcher.ble.BleConstants
-import com.spotdeck.launcher.ble.SpotDeckGattServer
+import com.spotdeck.launcher.ble.BleService
 import com.spotdeck.launcher.media.SpotifyController
 import com.spotdeck.launcher.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
@@ -46,8 +45,7 @@ class MainActivity : AppCompatActivity() {
     private var autoLaunchRunnable: Runnable? = null
     private var isAppListVisible = false
 
-    // BLE & Media
-    private var gattServer: SpotDeckGattServer? = null
+    // Media
     private lateinit var spotifyController: SpotifyController
 
     // Status display
@@ -308,58 +306,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initBleServer() {
-        if (gattServer?.isRunning == true) return
-
-        Log.i(TAG, "Initializing BLE GATT Server...")
-        gattServer = SpotDeckGattServer(this) { cmd ->
-            Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)}")
-            handleCommand(cmd)
-        }
-
-        if (gattServer!!.start()) {
-            Log.i(TAG, "BLE GATT Server started successfully")
-            startMediaMonitoring()
-        } else {
-            Log.e(TAG, "Failed to start BLE GATT Server")
-        }
-    }
-
-    private fun startMediaMonitoring() {
-        spotifyController.onPlaybackStateChanged = { json ->
-            Log.i(TAG, "Playback state changed, notifying client")
-            gattServer?.notifyCharacteristic(BleConstants.PLAYBACK_STATUS_CHAR_UUID, json.toByteArray())
-        }
-        spotifyController.onMetadataChanged = { json ->
-            Log.i(TAG, "Metadata changed, notifying client")
-            gattServer?.notifyCharacteristic(BleConstants.METADATA_CHAR_UUID, json.toByteArray())
-        }
-        spotifyController.startMonitoring()
-    }
-
-    private fun handleCommand(cmd: Byte) {
-        when (cmd) {
-            BleConstants.CMD_PLAY -> spotifyController.play()
-            BleConstants.CMD_PAUSE -> spotifyController.pause()
-            BleConstants.CMD_PLAY_PAUSE -> spotifyController.playPause()
-            BleConstants.CMD_NEXT -> spotifyController.next()
-            BleConstants.CMD_PREVIOUS -> spotifyController.previous()
-            BleConstants.CMD_VOLUME_UP -> spotifyController.volumeUp()
-            BleConstants.CMD_VOLUME_DOWN -> spotifyController.volumeDown()
-            BleConstants.CMD_MUTE -> spotifyController.mute()
-            BleConstants.CMD_REQUEST_STATUS -> {
-                val json = spotifyController.buildPlaybackStatusJson()
-                gattServer?.notifyCharacteristic(BleConstants.PLAYBACK_STATUS_CHAR_UUID, json.toByteArray())
-            }
-            BleConstants.CMD_REQUEST_METADATA -> {
-                val json = spotifyController.buildMetadataJson()
-                gattServer?.notifyCharacteristic(BleConstants.METADATA_CHAR_UUID, json.toByteArray())
-            }
-            BleConstants.CMD_REQUEST_DEVICE_STATUS -> {
-                val json = spotifyController.buildDeviceStatusJson()
-                gattServer?.notifyCharacteristic(BleConstants.DEVICE_STATUS_CHAR_UUID, json.toByteArray())
-            }
-            else -> Log.w(TAG, "Unhandled command: ${BleConstants.commandName(cmd)}")
-        }
+        Log.i(TAG, "Starting BLE Foreground Service...")
+        val intent = Intent(this, BleService::class.java)
+        startForegroundService(intent)
     }
 
     private fun checkNotificationAccess() {
@@ -415,9 +364,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        spotifyController.stopMonitoring()
-        gattServer?.stop()
-        gattServer = null
         stopTimeUpdates()
         try {
             unregisterReceiver(batteryReceiver)

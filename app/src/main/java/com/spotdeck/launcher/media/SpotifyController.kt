@@ -31,6 +31,10 @@ class SpotifyController(private val context: Context) {
     private var mediaCallback: MediaController.Callback? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // Debounce: only notify on actual state changes, not position updates
+    private var lastPlayingState: Boolean? = null
+    private var lastTitle: String? = null
+
     // Listeners for state changes
     var onPlaybackStateChanged: ((String) -> Unit)? = null
     var onMetadataChanged: ((String) -> Unit)? = null
@@ -58,19 +62,31 @@ class SpotifyController(private val context: Context) {
         activeController = controller
         mediaCallback = object : MediaController.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackState?) {
-                val json = buildPlaybackStatusJson(state)
-                this@SpotifyController.onPlaybackStateChanged?.invoke(json)
+                val nowPlaying = state?.state == PlaybackState.STATE_PLAYING
+                if (nowPlaying != lastPlayingState) {
+                    lastPlayingState = nowPlaying
+                    val json = buildPlaybackStatusJson(state)
+                    this@SpotifyController.onPlaybackStateChanged?.invoke(json)
+                    Log.i(TAG, "Playback state changed: ${if (nowPlaying) "PLAYING" else "PAUSED"}")
+                }
             }
 
             override fun onMetadataChanged(metadata: android.media.MediaMetadata?) {
-                val json = buildMetadataJson(metadata)
-                this@SpotifyController.onMetadataChanged?.invoke(json)
+                val title = metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE)
+                if (title != lastTitle) {
+                    lastTitle = title
+                    val json = buildMetadataJson(metadata)
+                    this@SpotifyController.onMetadataChanged?.invoke(json)
+                    Log.i(TAG, "Track changed: $title")
+                }
             }
         }
         controller.registerCallback(mediaCallback!!, mainHandler)
         Log.i(TAG, "MediaSession monitoring started")
 
         // Send initial state
+        lastPlayingState = controller.playbackState?.state == PlaybackState.STATE_PLAYING
+        lastTitle = controller.metadata?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE)
         onPlaybackStateChanged?.invoke(buildPlaybackStatusJson(controller.playbackState))
         onMetadataChanged?.invoke(buildMetadataJson(controller.metadata))
     }

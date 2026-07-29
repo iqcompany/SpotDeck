@@ -31,6 +31,7 @@ class SpotDeckGattServer(
     private var advertiser: BluetoothLeAdvertiser? = null
     private var isAdvertising = false
     private var connectedDevice: BluetoothDevice? = null
+    var onConnectionStateChanged: ((Boolean) -> Unit)? = null
     private val notifyEnabledChars = java.util.Collections.synchronizedSet(mutableSetOf<java.util.UUID>())
     private val characteristicData = java.util.concurrent.ConcurrentHashMap<java.util.UUID, ByteArray>()
 
@@ -41,11 +42,13 @@ class SpotDeckGattServer(
                 BluetoothGatt.STATE_CONNECTED -> {
                     connectedDevice = device
                     Log.i(TAG, "Device connected: ${device.address}")
+                    onConnectionStateChanged?.invoke(true)
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
                     connectedDevice = null
                     notifyEnabledChars.clear()
                     Log.i(TAG, "Device disconnected: ${device.address}")
+                    onConnectionStateChanged?.invoke(false)
                 }
             }
         }
