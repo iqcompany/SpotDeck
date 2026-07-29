@@ -31,6 +31,7 @@ object BleConstants {
     const val CMD_REQUEST_STATUS: Byte = 0x0B
     const val CMD_REQUEST_METADATA: Byte = 0x0C
     const val CMD_REQUEST_DEVICE_STATUS: Byte = 0x0D
+    const val CMD_SET_VOLUME: Byte = 0x0E
 
     fun commandName(cmd: Byte): String = when (cmd) {
         CMD_PLAY -> "PLAY"
@@ -46,6 +47,7 @@ object BleConstants {
         CMD_REQUEST_STATUS -> "REQUEST_STATUS"
         CMD_REQUEST_METADATA -> "REQUEST_METADATA"
         CMD_REQUEST_DEVICE_STATUS -> "REQUEST_DEVICE_STATUS"
+        CMD_SET_VOLUME -> "SET_VOLUME"
         else -> "UNKNOWN(0x${String.format("%02X", cmd.toInt() and 0xFF)})"
     }
 }

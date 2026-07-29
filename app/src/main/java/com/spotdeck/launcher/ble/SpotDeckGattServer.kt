@@ -20,7 +20,7 @@ import android.util.Log
 @SuppressLint("MissingPermission")
 class SpotDeckGattServer(
     private val context: Context,
-    private val onCommandReceived: (Byte) -> Unit
+    private val onCommandReceived: (Byte, ByteArray?) -> Unit
 ) {
     companion object {
         private const val TAG = "SpotDeckBLE"
@@ -31,6 +31,7 @@ class SpotDeckGattServer(
     private var advertiser: BluetoothLeAdvertiser? = null
     private var isAdvertising = false
     private var connectedDevice: BluetoothDevice? = null
+    var onConnectionStateChanged: ((Boolean) -> Unit)? = null
     private val notifyEnabledChars = java.util.Collections.synchronizedSet(mutableSetOf<java.util.UUID>())
     private val characteristicData = java.util.concurrent.ConcurrentHashMap<java.util.UUID, ByteArray>()
 
@@ -41,11 +42,13 @@ class SpotDeckGattServer(
                 BluetoothGatt.STATE_CONNECTED -> {
                     connectedDevice = device
                     Log.i(TAG, "Device connected: ${device.address}")
+                    onConnectionStateChanged?.invoke(true)
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
                     connectedDevice = null
                     notifyEnabledChars.clear()
                     Log.i(TAG, "Device disconnected: ${device.address}")
+                    onConnectionStateChanged?.invoke(false)
                 }
             }
         }
@@ -63,7 +66,7 @@ class SpotDeckGattServer(
                 if (value != null && value.isNotEmpty()) {
                     val cmd = value[0]
                     Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)} (0x${String.format("%02X", cmd.toInt() and 0xFF)}) from ${device.address}")
-                    onCommandReceived(cmd)
+                    onCommandReceived(cmd, value)
                 } else {
                     Log.w(TAG, "Empty command received from ${device.address}")
                 }
