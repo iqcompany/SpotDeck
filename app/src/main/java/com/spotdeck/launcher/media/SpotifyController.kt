@@ -5,7 +5,12 @@ import android.content.Context
 import android.media.AudioManager
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
+import android.os.BatteryManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import org.json.JSONObject
 
 class SpotifyController(private val context: Context) {
 
@@ -21,6 +26,14 @@ class SpotifyController(private val context: Context) {
         context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     private val listenerComponent = ComponentName(context, SpotDeckNotificationListener::class.java)
+
+    private var activeController: MediaController? = null
+    private var mediaCallback: MediaController.Callback? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    // Listeners for state changes
+    var onPlaybackStateChanged: ((String) -> Unit)? = null
+    var onMetadataChanged: ((String) -> Unit)? = null
 
     private fun findSpotifyController(): MediaController? {
         return try {
@@ -38,6 +51,38 @@ class SpotifyController(private val context: Context) {
         }
     }
 
+    fun startMonitoring() {
+        val controller = findSpotifyController() ?: return
+        stopMonitoring()
+
+        activeController = controller
+        mediaCallback = object : MediaController.Callback() {
+            override fun onPlaybackStateChanged(state: PlaybackState?) {
+                val json = buildPlaybackStatusJson(state)
+                this@SpotifyController.onPlaybackStateChanged?.invoke(json)
+            }
+
+            override fun onMetadataChanged(metadata: android.media.MediaMetadata?) {
+                val json = buildMetadataJson(metadata)
+                this@SpotifyController.onMetadataChanged?.invoke(json)
+            }
+        }
+        controller.registerCallback(mediaCallback!!, mainHandler)
+        Log.i(TAG, "MediaSession monitoring started")
+
+        // Send initial state
+        onPlaybackStateChanged?.invoke(buildPlaybackStatusJson(controller.playbackState))
+        onMetadataChanged?.invoke(buildMetadataJson(controller.metadata))
+    }
+
+    fun stopMonitoring() {
+        mediaCallback?.let { cb ->
+            activeController?.unregisterCallback(cb)
+        }
+        activeController = null
+        mediaCallback = null
+    }
+
     fun play() {
         val controller = findSpotifyController() ?: return
         controller.transportControls.play()
@@ -53,7 +98,7 @@ class SpotifyController(private val context: Context) {
     fun playPause() {
         val controller = findSpotifyController() ?: return
         val state = controller.playbackState
-        if (state != null && state.state == android.media.session.PlaybackState.STATE_PLAYING) {
+        if (state != null && state.state == PlaybackState.STATE_PLAYING) {
             controller.transportControls.pause()
             Log.i(TAG, "PAUSE sent (was playing)")
         } else {
@@ -95,5 +140,42 @@ class SpotifyController(private val context: Context) {
             "enabled_notification_listeners"
         ) ?: return false
         return enabledListeners.contains(listenerComponent.flattenToString())
+    }
+
+    // ── JSON payload builders ──
+
+    fun buildPlaybackStatusJson(state: PlaybackState? = null): String {
+        val playbackState = state ?: findSpotifyController()?.playbackState
+        val json = JSONObject()
+        json.put("isPlaying", playbackState?.state == PlaybackState.STATE_PLAYING)
+        json.put("position", playbackState?.position ?: 0)
+        json.put("playbackSpeed", playbackState?.playbackSpeed ?: 0f)
+        json.put("timestamp", System.currentTimeMillis())
+        return json.toString()
+    }
+
+    fun buildMetadataJson(metadata: android.media.MediaMetadata? = null): String {
+        val md = metadata ?: findSpotifyController()?.metadata
+        val json = JSONObject()
+        json.put("title", md?.getString(android.media.MediaMetadata.METADATA_KEY_TITLE) ?: "")
+        json.put("artist", md?.getString(android.media.MediaMetadata.METADATA_KEY_ARTIST) ?: "")
+        json.put("album", md?.getString(android.media.MediaMetadata.METADATA_KEY_ALBUM) ?: "")
+        json.put("duration", md?.getLong(android.media.MediaMetadata.METADATA_KEY_DURATION) ?: 0)
+        return json.toString()
+    }
+
+    fun buildDeviceStatusJson(): String {
+        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        val batteryLevel = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+
+        val currentVolume = audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC) ?: 0
+        val maxVolume = audioManager?.getStreamMaxVolume(AudioManager.STREAM_MUSIC) ?: 1
+
+        val json = JSONObject()
+        json.put("battery", batteryLevel)
+        json.put("volume", currentVolume)
+        json.put("maxVolume", maxVolume)
+        json.put("timestamp", System.currentTimeMillis())
+        return json.toString()
     }
 }

@@ -31,6 +31,8 @@ class SpotDeckGattServer(
     private var advertiser: BluetoothLeAdvertiser? = null
     private var isAdvertising = false
     private var connectedDevice: BluetoothDevice? = null
+    private val notifyEnabledChars = mutableSetOf<java.util.UUID>()
+    private val characteristicData = mutableMapOf<java.util.UUID, ByteArray>()
 
     private val gattServerCallback = object : BluetoothGattServerCallback() {
 
@@ -83,9 +85,9 @@ class SpotDeckGattServer(
 
             val fullValue = when (characteristic.uuid) {
                 BleConstants.PROTOCOL_INFO_CHAR_UUID -> {
-                    """{"protocolVersion":1,"minimumClientVersion":1,"deviceName":"SpotDeck","capabilities":["playback-control"]}""".toByteArray()
+                    """{"protocolVersion":1,"minimumClientVersion":1,"deviceName":"SpotDeck","capabilities":["playback-control","metadata","device-status"]}""".toByteArray()
                 }
-                else -> ByteArray(0)
+                else -> characteristicData[characteristic.uuid] ?: ByteArray(0)
             }
 
             if (offset >= fullValue.size) {
@@ -104,7 +106,16 @@ class SpotDeckGattServer(
             offset: Int,
             value: ByteArray?
         ) {
-            Log.i(TAG, "Descriptor write for ${descriptor.characteristic.uuid} from ${device.address}")
+            val charUuid = descriptor.characteristic.uuid
+            if (descriptor.uuid == BleConstants.CCCD_UUID) {
+                if (value.contentEquals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+                    notifyEnabledChars.add(charUuid)
+                    Log.i(TAG, "Notifications enabled for $charUuid from ${device.address}")
+                } else {
+                    notifyEnabledChars.remove(charUuid)
+                    Log.i(TAG, "Notifications disabled for $charUuid from ${device.address}")
+                }
+            }
             if (responseNeeded) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
             }
@@ -211,6 +222,42 @@ class SpotDeckGattServer(
         )
         service.addCharacteristic(commandChar)
 
+        // Playback Status Characteristic (Read + Notify)
+        val playbackStatusChar = BluetoothGattCharacteristic(
+            BleConstants.PLAYBACK_STATUS_CHAR_UUID,
+            BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        )
+        playbackStatusChar.addDescriptor(BluetoothGattDescriptor(
+            BleConstants.CCCD_UUID,
+            BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+        ))
+        service.addCharacteristic(playbackStatusChar)
+
+        // Metadata Characteristic (Read + Notify)
+        val metadataChar = BluetoothGattCharacteristic(
+            BleConstants.METADATA_CHAR_UUID,
+            BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        )
+        metadataChar.addDescriptor(BluetoothGattDescriptor(
+            BleConstants.CCCD_UUID,
+            BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+        ))
+        service.addCharacteristic(metadataChar)
+
+        // Device Status Characteristic (Read + Notify)
+        val deviceStatusChar = BluetoothGattCharacteristic(
+            BleConstants.DEVICE_STATUS_CHAR_UUID,
+            BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        )
+        deviceStatusChar.addDescriptor(BluetoothGattDescriptor(
+            BleConstants.CCCD_UUID,
+            BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+        ))
+        service.addCharacteristic(deviceStatusChar)
+
         // Protocol Information Characteristic (Read)
         val protocolInfoChar = BluetoothGattCharacteristic(
             BleConstants.PROTOCOL_INFO_CHAR_UUID,
@@ -219,8 +266,21 @@ class SpotDeckGattServer(
         )
         service.addCharacteristic(protocolInfoChar)
 
-        Log.i(TAG, "Service created with Command and Protocol Info characteristics")
+        Log.i(TAG, "Service created with all characteristics")
         return service
+    }
+
+    fun notifyCharacteristic(charUuid: java.util.UUID, data: ByteArray) {
+        characteristicData[charUuid] = data
+        val device = connectedDevice ?: return
+        if (!notifyEnabledChars.contains(charUuid)) return
+        val server = gattServer ?: return
+
+        val service = server.getService(BleConstants.SERVICE_UUID) ?: return
+        val characteristic = service.getCharacteristic(charUuid) ?: return
+        characteristic.value = data
+        server.notifyCharacteristicChanged(device, characteristic, false)
+        Log.i(TAG, "Notify sent for $charUuid (${data.size} bytes)")
     }
 
     private fun startAdvertising() {
