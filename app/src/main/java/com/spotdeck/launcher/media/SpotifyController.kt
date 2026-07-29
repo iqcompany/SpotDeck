@@ -5,7 +5,6 @@ import android.content.Context
 import android.media.AudioManager
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
-import android.service.notification.NotificationListenerService
 import android.util.Log
 
 class SpotifyController(private val context: Context) {
@@ -30,16 +29,9 @@ class SpotifyController(private val context: Context) {
             if (controller != null) {
                 Log.i(TAG, "Spotify MediaController found")
             } else {
-                // Fallback: use any active media session
-                val fallback = controllers?.firstOrNull()
-                if (fallback != null) {
-                    Log.i(TAG, "Spotify not found, using active session: ${fallback.packageName}")
-                } else {
-                    Log.w(TAG, "No active media sessions found")
-                }
-                fallback
+                Log.w(TAG, "Spotify MediaSession not found (active sessions: ${controllers?.size ?: 0})")
             }
-            controller ?: controllers?.firstOrNull()
+            controller
         } catch (e: SecurityException) {
             Log.e(TAG, "Notification listener permission not granted", e)
             null
