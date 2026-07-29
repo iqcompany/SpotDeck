@@ -1,7 +1,6 @@
 package com.spotdeck.launcher.ble
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
@@ -60,7 +59,7 @@ class SpotDeckGattServer(
             if (characteristic.uuid == BleConstants.COMMAND_CHAR_UUID) {
                 if (value != null && value.isNotEmpty()) {
                     val cmd = value[0]
-                    Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)} (0x${String.format("%02X", cmd)}) from ${device.address}")
+                    Log.i(TAG, "Command received: ${BleConstants.commandName(cmd)} (0x${String.format("%02X", cmd.toInt() and 0xFF)}) from ${device.address}")
                     onCommandReceived(cmd)
                 } else {
                     Log.w(TAG, "Empty command received from ${device.address}")
@@ -80,16 +79,20 @@ class SpotDeckGattServer(
             offset: Int,
             characteristic: BluetoothGattCharacteristic
         ) {
-            Log.i(TAG, "Read request for ${characteristic.uuid} from ${device.address}")
+            Log.i(TAG, "Read request for ${characteristic.uuid} offset=$offset from ${device.address}")
 
-            val response = when (characteristic.uuid) {
+            val fullValue = when (characteristic.uuid) {
                 BleConstants.PROTOCOL_INFO_CHAR_UUID -> {
                     """{"protocolVersion":1,"minimumClientVersion":1,"deviceName":"SpotDeck","capabilities":["playback-control"]}""".toByteArray()
                 }
                 else -> ByteArray(0)
             }
 
-            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, response)
+            if (offset >= fullValue.size) {
+                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_INVALID_OFFSET, offset, null)
+            } else {
+                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, fullValue.copyOfRange(offset, fullValue.size))
+            }
         }
 
         override fun onDescriptorWriteRequest(

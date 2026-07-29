@@ -46,6 +46,6 @@ object BleConstants {
         CMD_REQUEST_STATUS -> "REQUEST_STATUS"
         CMD_REQUEST_METADATA -> "REQUEST_METADATA"
         CMD_REQUEST_DEVICE_STATUS -> "REQUEST_DEVICE_STATUS"
-        else -> "UNKNOWN(0x${String.format("%02X", cmd)})"
+        else -> "UNKNOWN(0x${String.format("%02X", cmd.toInt() and 0xFF)})"
     }
 }

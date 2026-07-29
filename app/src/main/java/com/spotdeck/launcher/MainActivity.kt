@@ -349,6 +349,9 @@ class MainActivity : AppCompatActivity() {
                 Log.w(TAG, "BLE permissions denied")
                 Toast.makeText(this, "BLE permissions required for remote control", Toast.LENGTH_LONG).show()
             }
+            if (!isAppListVisible) {
+                scheduleAutoLaunch()
+            }
         }
     }
 
